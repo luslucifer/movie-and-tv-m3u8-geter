@@ -6,6 +6,7 @@ from urllib.parse import unquote
 import re
 from threading import Thread
 from time import sleep
+import os
 app = Flask(__name__)
 
 
@@ -139,12 +140,14 @@ class VidSrcEx:
         if 'vidplay' in source_url:
             return self.handleVidplay(source_url)
 
+host = os.environ.get('FLASK_RUN_HOST', '0.0.0.0')
+port = int(os.environ.get('FLASK_RUN_PORT', 5000))
 
 vid = VidSrcEx()
 @app.route('/')
 def home():
     return('i am samir ')
-    
+
 @app.route('/movie/<imdb>')
 def movie(imdb):
     for i in range (1000):
@@ -193,4 +196,4 @@ def tv(imdb,ss,ep):
         
 
 if __name__ == '__main__':
-    app.run(debug=True, use_reloader=True)
+    app.run(host=host, port=port)
