@@ -141,7 +141,10 @@ class VidSrcEx:
 
 
 vid = VidSrcEx()
-
+@app.route('/')
+def home():
+    return('i am samir ')
+    
 @app.route('/movie/<imdb>')
 def movie(imdb):
     for i in range (1000):
