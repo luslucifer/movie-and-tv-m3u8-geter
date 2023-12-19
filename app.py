@@ -6,7 +6,6 @@ from urllib.parse import unquote
 import re
 from threading import Thread
 from time import sleep
-import os
 app = Flask(__name__)
 
 
@@ -116,32 +115,36 @@ class VidSrcEx:
         # print({video.get('title'):video.get('id') for video in data.get('result')})
 
     def main(self,source_name, imdb ):
-        req = requests.get(f'https://vidsrc.to/embed/movie/{imdb}')
+        req = requests.get(f'https://vidsrc.to/embed/movie/{imdb}/')
         soup = BeautifulSoup(req.text,'html.parser')
         source_code = soup.find('a',{'data-id':True}).get('data-id')
         sources = self.get_sources(source_code)
         source = sources.get(source_name)
+        title = soup.find('div',class_='title').get_text()
+        mTitle =  str(title).replace(' ','-')
         if not source :
             print(f'no source found for {source_name}')
         source_url = self.getSourceUrl(source)
         # print(source_url)
         if 'vidplay' in source_url:
-            return self.handleVidplay(source_url)
+            return {'name':mTitle,'m3u8':str(self.handleVidplay(source_url))}
+
     def mainTV(self,source_name, imdb ,ss,ep):
         req = requests.get(f'https://vidsrc.to/embed/tv/{imdb}/{ss}/{ep}')
         soup = BeautifulSoup(req.text,'html.parser')
         source_code = soup.find('a',{'data-id':True}).get('data-id')
         sources = self.get_sources(source_code)
         source = sources.get(source_name)
+        title = soup.find('div',class_='title').get_text()
+        mTitle =  str(title).replace(' ','-')
         if not source :
             print(f'no source found for {source_name}')
         source_url = self.getSourceUrl(source)
         # print(source_url)
         if 'vidplay' in source_url:
+            return {'name':mTitle,'m3u8':str(self.handleVidplay(source_url))}
             return self.handleVidplay(source_url)
 
-host = os.environ.get('FLASK_RUN_HOST', '0.0.0.0')
-port = int(os.environ.get('FLASK_RUN_PORT', 5000))
 
 vid = VidSrcEx()
 @app.route('/')
@@ -154,9 +157,9 @@ def movie(imdb):
         try:
             Thread(target=vid.main).start()
             # return vid.mainTV("Vidplay",imdb,ss,ep)
-            outM3u8 = vid.mainTV("Vidplay",imdb)
-            if outM3u8 != None :
-                return(outM3u8)
+            out = vid.main("Vidplay",imdb)
+            if out['m3u8'] != 'None' :
+                return jsonify(out)
             else :
                 raise ValueError('lets go to except block')
 
@@ -176,9 +179,10 @@ def tv(imdb,ss,ep):
         try:
             Thread(target=vid.main).start()
             # return vid.mainTV("Vidplay",imdb,ss,ep)
-            outM3u8 = vid.mainTV("Vidplay",imdb,ss,ep)
-            if outM3u8 != None :
-                return(outM3u8)
+            out = vid.mainTV("Vidplay",imdb,ss,ep)
+            # return out['m3u8']
+            if out['m3u8'] != 'None' :
+                return jsonify(out)
             else :
                 raise ValueError('lets go to except block')
 
@@ -196,4 +200,4 @@ def tv(imdb,ss,ep):
         
 
 if __name__ == '__main__':
-    app.run(host=host, port=port)
+    app.run(debug=True)
